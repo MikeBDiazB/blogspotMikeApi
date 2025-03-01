@@ -114,12 +114,70 @@ const createPost = async (req, res, next) => {
     }
   };
   
-  //=================================== EDIT POST
-  // PATCH: api/posts/:id
-  // PROTECTED
-  const editPost = async (req, res, next) => {
-    res.json("Edit Post");
-  };
+//=================================== EDIT POST
+// PATCH: api/posts/:id
+// PROTECTED
+const editPost = async (req, res, next) => {
+    try {
+        let fileName;
+        let newFilename;
+        let updatedPost; // Declare updatedPost at the beginning to avoid reference issues
+        const postID = req.params.id;
+        let { title, category, description } = req.body;
+
+        if (!title || !category || description.length < 12) {
+            return next(new HttpError("Fill in all fields.", 422));
+        }
+
+        if (!req.files) {
+            updatedPost = await Post.findByIdAndUpdate(postID, { title, category, description }, { new: true });
+        } else {
+            // Get old post from database
+            const oldPost = await Post.findById(postID);
+            if (!oldPost) {
+                return next(new HttpError("Post not found.", 404));
+            }
+
+            // Delete old thumbnail from uploads
+            fs.unlink(path.join(__dirname, '..', 'uploads', oldPost.thumbnail), (err) => {
+                if (err) {
+                    console.error("Error deleting old thumbnail:", err);
+                }
+            });
+
+            // Upload new thumbnail
+            const { thumbnail } = req.files;
+
+            // Check file size
+            if (thumbnail.size > 2000000) {
+                return next(new HttpError("Thumbnail too big. Should be less than 2MB", 422));
+            }
+
+            fileName = thumbnail.name;
+            let splittedFilename = fileName.split('.');
+            newFilename = splittedFilename[0] + uuid() + "." + splittedFilename[splittedFilename.length - 1];
+
+            // Move file
+            await new Promise((resolve, reject) => {
+                thumbnail.mv(path.join(__dirname, '..', 'uploads', newFilename), (err) => {
+                    if (err) reject(new HttpError(err));
+                    else resolve();
+                });
+            });
+
+            updatedPost = await Post.findByIdAndUpdate(postID, { title, category, description, thumbnail: newFilename }, { new: true });
+        }
+
+        if (!updatedPost) {
+            return next(new HttpError("Post could not be updated.", 422));
+        }
+        res.status(200).json(updatedPost);
+    } catch (error) {
+        return next(new HttpError(error));
+    }
+};
+
+
   
   //=================================== DELETE POST
   // DELETE: api/posts/:id
