@@ -152,8 +152,53 @@ module.exports = changeAvatar;
 // POST : api/users/edit-user
 // PROTECTED
 const editUser = async (req, res, next) => {
-  res.json("Edit user details");
-};
+  try {
+    const { name, email, currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!name || !email || !currentPassword || !newPassword) {
+      return next(new HttpError("Fill in all fields.", 422));
+    }
+
+    // Get user from database
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new HttpError("User not found.", 403));
+    }
+
+    // Make sure new email doesn’t already exist
+    const emailExist = await User.findOne({ email });
+    if (emailExist && emailExist._id.toString() !== req.user.id) {
+      return next(new HttpError("Email already exists.", 422));
+    }
+
+    // Compare current password to DB password
+    const validateUserPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validateUserPassword) {
+      return next(new HttpError("Invalid current password.", 422));
+    }
+
+    // Compare new passwords
+    if (newPassword !== confirmNewPassword) {
+      return next(new HttpError("New passwords do not match.", 422));
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(newPassword, salt);
+
+    // Update user info in database
+    const newInfo = await User.findByIdAndUpdate(
+      req.user.id,
+      { name, email, password: hash },
+      { new: true }
+    );
+
+    res.status(200).json(newInfo);
+  } catch (error) {
+    return next(new HttpError(error));
+  }
+}
+;
 
 //====== GET AUTHORS
 // POST : api/users/authors
