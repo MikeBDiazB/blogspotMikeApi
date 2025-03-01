@@ -1,5 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken")
+const fs = require('fs')
+const path = require('path')
+const {v4:uuid} = require('uuid')
 const User = require("../models/userModel");
 const HttpError = require("../models/errorModel");
 
@@ -86,8 +89,64 @@ const getUser = async (req, res, next) => {
 // POST : api/users/change-avatar
 // PROTECTED
 const changeAvatar = async (req, res, next) => {
-  res.json("Change User avatar");
+  try {
+    if (!req.files || !req.files.avatar) {
+      return next(new HttpError("Please choose an image.", 422));
+    }
+
+    // Find user from database
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new HttpError("User not found.", 404));
+    }
+
+    // Delete old avatar if it exists
+    if (user.avatar) {
+      fs.unlink(path.join(__dirname, "..", "uploads", user.avatar), (err) => {
+        if (err && err.code !== "ENOENT") {
+          return next(new HttpError("Failed to delete old avatar.", 500));
+        }
+      });
+    }
+
+    const { avatar } = req.files;
+
+    // Check file size (limit: 500KB)
+    if (avatar.size > 500000) {
+      return next(new HttpError("Profile picture too big. Should be less than 500KB.", 422));
+    }
+
+    // Generate new unique filename
+    let fileName = avatar.name;
+    let splittedFilename = fileName.split(".");
+    let newFilename =
+      splittedFilename[0] + uuid() + "." + splittedFilename[splittedFilename.length - 1];
+
+    // Move file to the uploads directory
+    avatar.mv(path.join(__dirname, "..", "uploads", newFilename), async (err) => {
+      if (err) {
+        return next(new HttpError("Failed to upload image.", 500));
+      }
+
+      // Update user avatar in the database
+      const updatedAvatar = await User.findByIdAndUpdate(
+        req.user.id,
+        { avatar: newFilename },
+        { new: true }
+      );
+
+      if (!updatedAvatar) {
+        return next(new HttpError("Avatar couldn’t be changed.", 422));
+      }
+
+      res.status(200).json(updatedAvatar);
+    });
+  } catch (error) {
+    return next(new HttpError("Something went wrong.", 500));
+  }
 };
+
+module.exports = changeAvatar;
 
 //====== EDIT USER DETAILS (from profile)
 // POST : api/users/edit-user
