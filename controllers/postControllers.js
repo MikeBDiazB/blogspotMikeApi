@@ -62,28 +62,56 @@ const createPost = async (req, res, next) => {
   // GET: api/posts
   // UNPROTECTED
   const getPosts = async (req, res, next) => {
-    res.json("Get all Posts");
-  };
+   try {
+    const posts = await Post.find().sort({updatedAT: -1})
+    res.status(200).json(posts)
+
+   } catch (error) {
+    return next (new HttpError(error))
+   }
+
+  }
   
   //=================================== GET SINGLE POST
   // GET: api/posts/:id
   // UNPROTECTED
   const getPost = async (req, res, next) => {
-    res.json("Get single Post");
+    try {
+         const postId = req.params.id;
+         const post = await Post.findById(postId)
+         if(!post) {
+            return next(new HttpError("Post not found.", 404))
+         }
+         res.status(200).json(post)
+    } catch (error) {
+        return next(new HttpError(error))
+    }
   };
   
   //=================================== GET POSTS BY CATEGORY
   // GET: api/posts/categories/:category
   // PROTECTED
   const getCatPosts = async (req, res, next) => {
-    res.json("Get Posts by category.");
+    try {
+        const {category} = req.params;
+        const catPosts = await Post.find({category}).sort({createdAt: -1})
+        res.status(200).json(catPosts)
+    } catch(error) {
+         return next (new HttpError(error))
+    }
   };
-  
+
   //=================================== GET POSTS BY AUTHOR/USER
   // GET: api/posts/users/:id
   // UNPROTECTED
   const getUserPosts = async (req, res, next) => {
-    res.json("Get user posts.");
+    try {
+     const {id} = req.params;
+     const posts = await Post.find({creator: id}).sort({createdAt: -1})
+     res.status(200).json(posts)
+    } catch (error) {
+        return next (new HttpError(error))
+    }
   };
   
   //=================================== EDIT POST
