@@ -12,9 +12,8 @@ const app = express();
 
 app.use(express.json({extended: true}))
 app.use(express.urlencoded({extended: true}))
-app.use(cors({credentials: true, origin: process.env.CLIENT_URL || "http://localhost:5173"
-    
-}))
+//app.use(cors({credentials: true, origin: process.env.CLIENT_URL || "http://localhost:5173"  
+//}))
 app.use(upload())
 app.use('/uploads', express.static(__dirname + '/uploads'))
 
