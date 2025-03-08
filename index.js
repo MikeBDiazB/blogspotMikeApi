@@ -12,7 +12,7 @@ const app = express();
 
 // ✅ Configurar correctamente CORS
 app.use(cors({
-    origin: ["http://localhost:5173", "https://blogspot-app-lyart.vercel.app"], // Permite peticiones desde el frontend
+    origin: ["http://localhost:5173", "https://blogspot-app-mauve.vercel.app"], // Permite peticiones desde el frontend
     credentials: true, // Permitir cookies o autenticación
     methods: ["GET", "POST", "PUT", "DELETE"], // Métodos permitidos
     allowedHeaders: ["Content-Type", "Authorization"], // Encabezados permitidos
