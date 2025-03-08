@@ -10,12 +10,12 @@ const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
 
-// ✅ Configurar CORS correctamente
+// ✅ Configurar correctamente CORS
 app.use(cors({
-    origin: ["http://localhost:5173", "https://blogspot-app-testing.vercel.app"], // Agrega tu dominio de Vercel aquí
-    credentials: true, // Permitir credenciales (si usas cookies o autenticación)
-    methods: ["GET", "POST", "PUT", "DELETE"], // Métodos HTTP permitidos
-    allowedHeaders: ["Content-Type", "Authorization"] // Encabezados permitidos
+    origin: ["http://localhost:5173", "https://blogspot-app-testing.vercel.app"], // Permite peticiones desde el frontend
+    credentials: true, // Permitir cookies o autenticación
+    methods: ["GET", "POST", "PUT", "DELETE"], // Métodos permitidos
+    allowedHeaders: ["Content-Type", "Authorization"], // Encabezados permitidos
 }));
 
 // Middlewares
@@ -28,11 +28,11 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 
-// Middlewares de manejo de errores
+// Manejo de errores
 app.use(notFound);
 app.use(errorHandler);
 
-// Definir el puerto de forma segura
+// Definir puerto
 const PORT = process.env.PORT || 5000;
 
 // Conectar a MongoDB y luego iniciar el servidor
@@ -44,5 +44,5 @@ connect(process.env.MONGO_URI)
     })
     .catch(error => {
         console.error("❌ Error al conectar a MongoDB:", error);
-        process.exit(1); // Terminar el proceso si falla la conexión a la DB
+        process.exit(1);
     });
